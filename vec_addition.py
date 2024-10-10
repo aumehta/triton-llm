@@ -14,14 +14,18 @@ def add_kernel(a_ptr, b_ptr, output_ptr, num_elements: tl.constexpr, block_size:
     # create mask for sections we do not want to compute
     mask = thread_offsets < num_elements
 
+    # tl.load() moves to SRAM 
     a_pointers = tl.load(a_ptr + thread_offsets, mask=mask)
     b_pointers = tl.load(b_ptr + thread_offsets, mask=mask)
-
+ 
+    # perform vector addition
     output = a_pointers + b_pointers
+    
+    # writes to DRAM
     tl.store(output_ptr + thread_offsets, output, mask=mask)
 
 def vector_addition(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    # create output_buffer
+    # create output buffer
     output_buffer = torch.empty_like(a)
 
     # checks to ensure that a and b are of same size
@@ -35,7 +39,6 @@ def vector_addition(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     # compute using triton kernel function we created 
     add_kernel[grid](a, b, output_buffer, num_elements, block_size=128)
     return output_buffer
-
 
 def verify():
     torch.manual_seed(0)
