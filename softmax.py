@@ -1,6 +1,6 @@
-import torch
 import triton
 import triton.language as tl
+import torch
 
 def softmax_og(x: torch.Tensor) -> torch.Tensor:
     x_max = x.max(dim=1)[0]
@@ -31,6 +31,7 @@ def softmax_kernel(input_ptr, output_ptr, stride_input_row, stride_output_row, n
     row_sum = tl.sum(row_exp, axis=0)
     output = row_exp / row_sum
 
+    # calculate output pointers
     output_start_ptr = output_ptr + (row_idx * stride_output_row)
     output_pointers = output_start_ptr + col_offsets
     
