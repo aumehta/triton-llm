@@ -38,12 +38,12 @@ def add_kernel(a_ptr, b_ptr,
     tl.store(output_ptr + offsets_m[:, None] * am_stride + offsets_n[None, :] * an_stride, output, mask=mask_m[:, None] & mask_n[None, :])
 
 def matrix_addition(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    output_buffer = torch.empty_lke(a)
+    output_buffer = torch.empty_like(a)
 
     assert a.shape == b.shape
     M, N = a.shape
 
-    grid = lambda meta: (tl.cdiv(M, meta['block_size_m']) * tl.cdiv(N, meta['block_size_n']),)
+    grid = lambda meta: (triton.cdiv(M, meta['block_size_m']) * triton.cdiv(N, meta['block_size_n']),)
     add_kernel[grid](a, b, output_buffer, a.stride(0), a.stride(1), b.stride(0), b.stride(1), block_size_m=32, block_size_n=32, M=M, N=N)
 
     return output_buffer
