@@ -3,8 +3,8 @@ import triton.language as tl
 import torch
 
 @triton.jit
-def mult_kernel(output_ptr, # output pointer
-                a_ptr, b_ptr, # pointers to a and b matrices
+def mult_kernel(a_ptr, b_ptr, # pointers to a and b matrices
+                output_ptr, # output pointer
                 am_stride, ak_stride, # row and col strides for matrix a
                 bk_stride, bn_stride, # row and col strides for matrix b
                 block_size_m:tl.constexpr, block_size_k: tl.constexpr, block_size_n:tl.constexpr, # block sizes for a and b
@@ -15,8 +15,8 @@ def mult_kernel(output_ptr, # output pointer
     
     # create the grid. Remember: we are creating a 2d grid here so that is why we create "pseudo pids" for rows and cols. Essentially, 
     pid = tl.program_id(axis=0)
-    grid_m = (M + block_size_m - 1) // block_size_m
-    grid_n = (N + block_size_n - 1) // block_size_n
+    grid_m = tl.cdiv(M, block_size_m)
+    grid_n = tl.cdiv(N, block_size_n)
     pid_m = pid / grid_n
     pid_n = pid % grid_n
 
@@ -57,11 +57,11 @@ def matrix_mult(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return output_buffer
 
 if __name__ == "__main__":
-    # a = torch.tensor([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]], dtype=torch.float32, device='cuda')
-    # b = torch.tensor([[1, 6], [2, 7], [3, 8], [4, 9], [5, 10]], dtype=torch.float32, device='cuda')
-    # print(f"Torch matrix multiplication: \n {torch.matmul(a, b)}")
-    import numpy as np
+    a = torch.tensor([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]], dtype=torch.float32, device='cuda')
+    b = torch.tensor([[1, 6], [2, 7], [3, 8], [4, 9], [5, 10]], dtype=torch.float32, device='cuda')
+    print(f"Torch matrix multiplication: \n {torch.matmul(a, b)}")
+    # import numpy as np
 
-    pid_m = 0
-    BLOCK_SIZE_M = 100
-    print (pid_m * BLOCK_SIZE_M + np.arange(0, BLOCK_SIZE_M) % 256)
+    # pid_m = 0
+    # BLOCK_SIZE_M = 100
+    # print (pid_m * BLOCK_SIZE_M + np.arange(0, BLOCK_SIZE_M) % 256)
